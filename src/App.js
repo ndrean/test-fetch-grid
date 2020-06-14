@@ -3,19 +3,14 @@
 import React, { useState, useEffect } from "react";
 import Grid from "@material-ui/core/Grid";
 import { makeStyles } from "@material-ui/core/styles";
-import Card from "@material-ui/core/Card";
-//import CardActionArea from "@material-ui/core/CardActionArea";
-//import CardActions from "@material-ui/core/CardActions";
-import CardContent from "@material-ui/core/CardContent";
-import Typography from "@material-ui/core/Typography";
-import Avatar from "@material-ui/core/Avatar";
-import CardMedia from "@material-ui/core/CardMedia";
 
 import GridList from "@material-ui/core/GridList";
 import GridListTile from "@material-ui/core/GridListTile";
 import GridListTileBar from "@material-ui/core/GridListTileBar";
+import Button from "@material-ui/core/Button";
 // import IconButton from "@material-ui/core/IconButton";
 import Loader from "./loader";
+import UserCard from "./usercard";
 import "./App.css";
 
 import NewInput from "./newinput";
@@ -46,37 +41,100 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 function App() {
-  const [users, setUsers] = useState([]);
+  /* Testing inputs */
   const [test, setTest] = useState("");
   const [test2, setTest2] = useState("");
   const [data, setData] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const url = "https://reqres.in/api/users?delay=2";
+  /* end testing inputs */
 
+  /* fetching users */
+  const [users, setUsers] = useState([]);
+  const [kiterArticle, setKiterArticle] = useState();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const url = "https://reqres.in/api/users";
+
+  /***** fetching on PAGE LOAD => put INSIDE 'useEffect' *****/
   useEffect(() => {
     async function fetchData() {
-      setIsLoading(true);
-      return await fetch(url)
-        .then((res) => res.json())
-        .then((res) => res.data)
-        .catch(console.error)
-        .finally(() => setIsLoading(false));
+      // return await fetch(url + "?delay=1")
+      //   .then((res) => res.json())
+      //   .then((res) => res.data)
+      //   .catch(console.error)
+      //   .finally(() => setIsLoading(false));
+
+      /* Equivalent form */
+      try {
+        const request = await fetch(url + "?delay=1");
+        const response = await request.json();
+        if (response) {
+          return response.data;
+        }
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setIsLoading(false);
+      }
     }
     fetchData().then((data) => {
       if (data) setUsers(data);
     });
   }, []);
 
+  /****** fetching ON CLICK : put in button_handling_click *****/
+  async function handleButtonClick(e) {
+    e.preventDefault();
+    setIsLoading(true);
+    //setLoaded(true);
+
+    return await fetch(url)
+      .then((res) => res.json())
+      .then((res) => {
+        if (res) {
+          setUsers([...res.data]);
+          setLoaded(true);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }
+
+  /***** fetching ON CHANGE => 'useEffect' with s state variable  
+  1. the kiter is defined by a 'select', that  calls 'handleUserChange' that sets the kiter
+  2. then only at the end, we use 'useEffect' to render once the kiter is set */
+  // useEffect(() => {
+  //   if (kiterArticle) {
+  //     setIsLoading(true);
+  //     fetch(url + "/" + kiterArticle.id)
+  //       .then((res) => res.json())
+  //       .then((res) => {
+  //         if (res) {
+  //           setKiterArticle({ ...res.data });
+  //         }
+  //       })
+  //       .catch(console.error)
+  //       .finally(() => setIsLoading(false));
+  //   }
+  // }, []);
+
+  function handleUserChange(e) {
+    // e.preventDefault();
+    setKiterArticle(users.find((user) => user.email === e.target.value));
+  }
+
+  /************** TEST INPUT COMPONENT ****************/
   function onInput(e, setState) {
     setState(e.target.value);
   }
-
   function doSubmit(e) {
     e.preventDefault();
     setData([...data, { t1: test, t2: test2 }]);
     setTest2("");
     setTest("");
   }
+  /****************** END TEST INPUT COMPONENT *************/
+
   const classes = useStyles();
   return (
     <>
@@ -103,7 +161,10 @@ function App() {
             <p>{JSON.stringify(data)}</p>
           </form>
 
-          <p>loading: {isLoading.toString()}</p>
+          <h4>
+            Data will be fetched on page load. Is loading ?{" "}
+            {isLoading.toString()}
+          </h4>
         </div>
 
         <h3>Responsive grid</h3>
@@ -114,50 +175,62 @@ function App() {
             {/* added 'users && ...' returns false until fetch arrives to stop rendering before fetch */}
             {users &&
               users.map((user) => (
-                <Grid container item key={user.id} xs={6} sm={3}>
-                  <Card className={classes.root} variant="outlined">
-                    <CardContent>
-                      <Typography>{user.email}</Typography>
-
-                      <Typography>
-                        {user.first_name} {user.last_name}
-                      </Typography>
-
-                      <CardMedia
-                        className={classes.media}
-                        image={user.avatar}
-                        title={user.last_name}
-                        loading="lazy"
-                      />
-                      <Avatar
-                        alt={user.last_name}
-                        src={user.avatar}
-                        loading="lazy"
-                      />
-                    </CardContent>
-                  </Card>
-                </Grid>
+                <UserCard user={user} classes={classes} key={user.email} />
               ))}
           </Grid>
         )}
       </div>
+      <hr />
+
+      <div>
+        <h3>Display selected user</h3>
+        <select onChange={handleUserChange} disabled={isLoading}>
+          {users &&
+            users.map((user) => (
+              <option key={user.email} value={user.email}>
+                {user.first_name} {user.last_name}
+              </option>
+            ))}
+        </select>
+        {kiterArticle && <UserCard user={kiterArticle} classes={classes} />}
+      </div>
+      <hr />
 
       <div className={classes.root}>
-        <GridList className={classes.gridList} cols={2.5}>
-          {users.map((user) => (
-            <GridListTile key={user.id}>
-              <img src={user.avatar} alt={user.name} />
-              <GridListTileBar
-                title={<span>{user.name}</span>}
-                subtitle={<span>{user.email}</span>}
-                // classes={{
-                //   root: classes.titleBar,
-                //   title: classes.title,
-                // }}
-              />
-            </GridListTile>
-          ))}
-        </GridList>
+        <Button
+          variant="contained"
+          color="primary"
+          disabled={isLoading}
+          onClick={(e) => handleButtonClick(e)}
+          style={{ margin: "40px" }}
+        >
+          Load users
+        </Button>
+        <Grid
+          container
+          spacing={10}
+          style={{ padding: "40px" }}
+          justify="center"
+        >
+          {loaded && (
+            <GridList className={classes.gridList} cols={2.5}>
+              {users &&
+                users.map((user) => (
+                  <GridListTile key={user.id}>
+                    <img src={user.avatar} alt={user.name} />
+                    <GridListTileBar
+                      title={<span>{user.name}</span>}
+                      subtitle={<span>{user.email}</span>}
+                      // classes={{
+                      //   root: classes.titleBar,
+                      //   title: classes.title,
+                      // }}
+                    />
+                  </GridListTile>
+                ))}
+            </GridList>
+          )}
+        </Grid>
       </div>
     </>
   );
