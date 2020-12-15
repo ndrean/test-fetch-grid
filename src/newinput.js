@@ -5,6 +5,7 @@ export default function NewInput(props) {
     <>
       <label htmlFor={props.attr}>{props.children}</label>
       <input
+        //{...props}
         type="text"
         name={props.attr}
         id={props.attr}

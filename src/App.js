@@ -66,7 +66,7 @@ function App() {
 
       /* Equivalent form */
       try {
-        const request = await fetch(url + "?delay=1");
+        const request = await fetch(url + "?delay=2");
         const response = await request.json();
         if (response) {
           return response.data;
@@ -88,7 +88,7 @@ function App() {
     setIsLoading(true);
     //setLoaded(true);
 
-    return await fetch(url)
+    return await fetch(url + "?delay=2")
       .then((res) => res.json())
       .then((res) => {
         if (res) {
